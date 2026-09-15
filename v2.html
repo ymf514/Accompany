@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accompany</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#f8f3e6;overflow:hidden;
+    font-family:'IBM Plex Mono',monospace;transition:background-color 1.2s ease}
+
+  #title{position:fixed;top:50%;right:12%;transform:translateY(-50%);
+    pointer-events:none;color:#5c4f36;font-size:clamp(11px,1.2vw,12px);font-weight:400;
+    letter-spacing:.4px;white-space:nowrap}
+
+  #log{position:fixed;top:28px;left:28px;right:28px;bottom:28px;
+    display:flex;flex-direction:column;justify-content:flex-start;gap:6px;
+    pointer-events:none;overflow:hidden}
+  #log div{color:#8a7a56;font-size:13px;opacity:0;transform:translateY(-6px);
+    animation:log-in .28s ease forwards}
+  @keyframes log-in{to{opacity:1;transform:translateY(0)}}
+
+  #flash{position:fixed;inset:0;background:#ecd98a;opacity:0;pointer-events:none;z-index:5}
+  #edge-glow{position:fixed;inset:0;pointer-events:none;z-index:6;
+    box-shadow:inset 0 0 0 0 rgba(216,185,85,0)}
+
+  .float-pop{position:fixed;font-size:28px;pointer-events:none;z-index:50;
+    animation:float-up 3.4s ease-out forwards}
+  @keyframes float-up{
+    0%{opacity:0;transform:translate(0,0) scale(.6)}
+    12%{opacity:1;transform:translate(0,-10px) scale(1)}
+    100%{opacity:0;transform:translate(var(--dx,20px),-160px) scale(1)}
+  }
+</style>
+</head>
+<body>
+<div id="log"></div>
+<div id="title">(stay with me for a bit)</div>
+<div id="flash"></div>
+<div id="edge-glow"></div>
+
+<script>
+const MOOD_DECAY_MS = 2200;
+const MAX_LOG_LINES = 14;
+
+/* ---------- same monologue pools as the legible version ---------- */
+const LINES = {
+  click: [
+    {id:'c-sparkle', t:'✨'}, {id:'c-heart', t:'💗'},
+    {id:'c-sparkle2', t:'✨ ✨'}, {id:'c-heart2', t:'💗 💗'},
+    {id:'c-both', t:'✨ 💗'},
+  ],
+  keyboard: [
+    {id:'so-glad', t:"so glad you're here"}, {id:'like-this', t:"i like this"},
+    {id:'stay-longer', t:"stay a little longer"}, {id:'this-nice', t:"this is nice"},
+    {id:'came-back', t:"you came back"}, {id:'really-nice', t:"this is really nice!"},
+    {id:'missed-this', t:"i missed this"}, {id:'dont-go-yet', t:"don't go yet"},
+    {id:'glad-stayed', t:"glad you stayed"}, {id:'feels-good', t:"this feels good"},
+    {id:'this-great', t:"okay, this is great"}, {id:'get-used-to', t:"i could get used to this"},
+  ],
+  shortQuiet: [
+    {id:'ellipsis', t:'...'}, {id:'still-here', t:'still here'},
+    {id:'waiting', t:'waiting'}, {id:'quiet-moment', t:'quiet for a moment'},
+  ],
+  longQuiet: [
+    {id:'still-there', t:'are you still there?'}, {id:'hello', t:'hello?'},
+    {id:'see-what-said', t:'did you see what i said?'}, {id:'you-there', t:'you there?'},
+  ],
+  veryQuiet: [
+    {id:'quiet-a-while', t:"it's been quiet for a while"}, {id:'did-you-leave', t:'did you leave?'},
+    {id:'wondering', t:"i'm still here, in case you're wondering"},
+    {id:'just-checking', t:"just checking if you're around"}, {id:'ok-wait', t:"okay. i'll wait."},
+  ],
+  unknown: [
+    {id:'huh', t:'huh?'}, {id:'qq', t:'??'},
+    {id:'new-to-me', t:"that one's new to me"}, {id:'what-was-that', t:'...what was that?'},
+  ]
+};
+const EMOJI = {
+  keyboard:['🕊️','🍕','🌤️','☕','📚','🎶','🌻','🧺'],
+  click:['🥺','😊','😌','😳','😄','☺️'],
+  drag:['😍','🥰','😙','🤩','🥳'],
+  unknown:['❓','❗','#','@','?!']
+};
+
+/* ---------- state ---------- */
+let mouseMoving = false, mouseMoveTimer = null;
+let mood = 50, lastInteraction = Date.now(), dragStart = null;
+let lastIdleZoneId = 'active';
+
+function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+/* ---------- mood -> page color ---------- */
+function applyMood(){
+  const t = mood/100;
+  const light=[248,243,230], deep=[236,220,164];
+  const c = light.map((v,i)=>Math.round(v+(deep[i]-v)*t));
+  document.body.style.backgroundColor = `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+applyMood();
+setInterval(()=>{ mood = Math.max(0, mood-1); applyMood(); }, MOOD_DECAY_MS);
+
+function flash(intensity){
+  const el = document.getElementById('flash');
+  el.style.transition = 'none';
+  el.style.opacity = intensity;
+  requestAnimationFrame(()=>{
+    el.style.transition = 'opacity .9s ease-out';
+    el.style.opacity = 0;
+  });
+}
+function edgeGlow(intensity){
+  const el = document.getElementById('edge-glow');
+  el.style.transition = 'none';
+  el.style.boxShadow = `inset 0 0 140px 50px rgba(216,185,85,${intensity})`;
+  requestAnimationFrame(()=>{
+    el.style.transition = 'box-shadow 1.1s ease-out';
+    el.style.boxShadow = 'inset 0 0 140px 50px rgba(216,185,85,0)';
+  });
+}
+
+/* ---------- background monologue log: grows top-to-bottom, left-aligned ---------- */
+const logEl = document.getElementById('log');
+function appendLog(line){
+  const div = document.createElement('div');
+  div.textContent = line.t;
+  logEl.appendChild(div);
+  while (logEl.children.length > MAX_LOG_LINES) logEl.removeChild(logEl.firstChild);
+}
+appendLog({t:'are you there?'});
+
+const VERY_QUIET_REPEAT_MS = 12000;
+let lastVeryQuietPush = 0;
+
+setInterval(()=>{
+  const idleMs = Date.now() - lastInteraction;
+  const zones = [
+    {id:'active', max:5000}, {id:'shortQuiet', max:15000},
+    {id:'longQuiet', max:40000}, {id:'veryQuiet', max:Infinity},
+  ];
+  const zone = zones.find(z => idleMs < z.max) || zones.at(-1);
+  if (zone.id === 'active') { lastIdleZoneId = 'active'; return; }
+  if (zone.id !== lastIdleZoneId){
+    lastIdleZoneId = zone.id;
+    appendLog(randomFrom(LINES[zone.id]));
+    if (zone.id === 'veryQuiet') lastVeryQuietPush = Date.now();
+    return;
+  }
+  if (zone.id === 'veryQuiet' && Date.now()-lastVeryQuietPush > VERY_QUIET_REPEAT_MS){
+    appendLog(randomFrom(LINES.veryQuiet));
+    lastVeryQuietPush = Date.now();
+  }
+}, 500);
+
+/* ---------- floating emoji pop ---------- */
+function popEmoji(emoji, x, y){
+  const el = document.createElement('div');
+  el.className = 'float-pop'; el.textContent = emoji;
+  el.style.left = x+'px'; el.style.top = y+'px';
+  el.style.setProperty('--dx', (Math.random()*80-40)+'px');
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 3600);
+}
+
+/* ---------- respond to a classified input ---------- */
+function respond(category, screenX, screenY){
+  lastInteraction = Date.now();
+  lastIdleZoneId = 'active';
+
+  if (category === 'keyboard'){
+    popEmoji(randomFrom(EMOJI.keyboard), window.innerWidth/2, window.innerHeight/2);
+    appendLog(randomFrom(LINES.keyboard));
+  } else if (category === 'click'){
+    mood = Math.min(100, mood+5);
+    flash(0.28);
+    popEmoji(randomFrom(EMOJI.click), screenX, screenY);
+    appendLog(randomFrom(LINES.click));
+  } else if (category === 'drag'){
+    mood = Math.min(100, mood+10);
+    flash(0.45);
+    edgeGlow(0.65);
+    popEmoji(randomFrom(EMOJI.drag), screenX, screenY);
+    appendLog(randomFrom(LINES.keyboard));
+  } else {
+    popEmoji(randomFrom(EMOJI.unknown), screenX, screenY);
+    appendLog(randomFrom(LINES.unknown));
+  }
+  applyMood();
+}
+
+/* ================= input capture & classification ================= */
+document.addEventListener('mousemove', () => {
+  mouseMoving = true;
+  clearTimeout(mouseMoveTimer);
+  mouseMoveTimer = setTimeout(()=>{ mouseMoving = false; }, 220);
+});
+
+document.addEventListener('mousedown', (e) => {
+  dragStart = { x:e.clientX, y:e.clientY };
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (!dragStart) return;
+  const distance = Math.hypot(e.clientX-dragStart.x, e.clientY-dragStart.y);
+  const category = distance > 24 ? 'drag' : 'click';
+  respond(category, e.clientX, e.clientY);
+  dragStart = null;
+});
+
+document.addEventListener('keydown', (e) => {
+  if (mouseMoving) return;
+  const isCombo = e.ctrlKey || e.altKey || e.metaKey;
+  respond(isCombo ? 'unknown' : 'keyboard', window.innerWidth/2, window.innerHeight/2);
+});
+</script>
+</body>
+</html>

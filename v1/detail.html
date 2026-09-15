@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accompany — monologue key</title>
+<style>
+  body{max-width:640px;margin:40px auto;padding:0 20px 80px;
+    font-family:'IBM Plex Mono',monospace,monospace;color:#5c4f36;background:#f8f3e6;
+    line-height:1.6;font-size:15px}
+  h1{font-size:20px;margin-bottom:4px}
+  p.lede{color:#8a7a56;font-size:13px;margin-top:0}
+  h2{font-size:15px;margin:34px 0 4px;border-bottom:1px solid #d8b955;padding-bottom:4px}
+  p.cond{color:#8a7a56;font-size:13px;margin:0 0 14px}
+  dl{margin:0}
+  dt{font-weight:bold;margin-top:10px;padding:6px 8px;border-radius:4px}
+  dd{margin:2px 0 0 8px;color:#8a7a56;font-size:13px}
+  dt:target, dt:target + dd{ background:#ecd98a; }
+  h2:target{ background:#ecd98a; }
+  a.back{font-size:13px}
+</style>
+</head>
+<body>
+<h1>What triggers each line</h1>
+<p class="lede">Each stage below is a separate response pool. Clicking a response box on the main page jumps straight to its section here.</p>
+
+<h2 id="sec-click">Click — gentle interaction</h2>
+<p class="cond">A single click. Its own pool, separate from keyboard — no words, just two symbols.</p>
+<dl>
+<dt id="p-c-sparkle">✨</dt><dd>after a click</dd>
+<dt id="p-c-heart">💗</dt><dd>after a click</dd>
+<dt id="p-c-sparkle2">✨ ✨</dt><dd>after a click</dd>
+<dt id="p-c-heart2">💗 💗</dt><dd>after a click</dd>
+<dt id="p-c-both">✨ 💗</dt><dd>after a click</dd>
+</dl>
+
+<h2 id="sec-keyboard">Keyboard — sharing daily life</h2>
+<p class="cond">Any key press. This is its own pool of full phrases — click does not use these anymore.</p>
+<dl>
+<dt id="p-so-glad">so glad you're here</dt><dd>after a key press</dd>
+<dt id="p-like-this">i like this</dt><dd>after a key press</dd>
+<dt id="p-stay-longer">stay a little longer</dt><dd>after a key press</dd>
+<dt id="p-this-nice">this is nice</dt><dd>after a key press</dd>
+<dt id="p-came-back">you came back</dt><dd>after a key press</dd>
+<dt id="p-really-nice">this is really nice!</dt><dd>after a key press</dd>
+<dt id="p-missed-this">i missed this</dt><dd>after a key press</dd>
+<dt id="p-dont-go-yet">don't go yet</dt><dd>after a key press</dd>
+<dt id="p-glad-stayed">glad you stayed</dt><dd>after a key press</dd>
+<dt id="p-feels-good">this feels good</dt><dd>after a key press</dd>
+<dt id="p-this-great">okay, this is great</dt><dd>after a key press</dd>
+<dt id="p-get-used-to">i could get used to this</dt><dd>after a key press</dd>
+</dl>
+
+<h2 id="sec-drag">Drag — forceful interaction</h2>
+<p class="cond">A press-and-drag currently reuses the same pool as <a href="#sec-keyboard">Keyboard, above</a> — same lines, triggered by a different action.</p>
+
+<h2 id="sec-unrecognized">Unrecognized — doesn't understand</h2>
+<p class="cond">A key combo (ctrl / alt / cmd held with another key) — something the system has no category for.</p>
+<dl>
+<dt id="p-huh">huh?</dt><dd>after an unrecognized key combo</dd>
+<dt id="p-qq">??</dt><dd>after an unrecognized key combo</dd>
+<dt id="p-new-to-me">that one's new to me</dt><dd>after an unrecognized key combo</dd>
+<dt id="p-what-was-that">...what was that?</dt><dd>after an unrecognized key combo</dd>
+</dl>
+
+<h2 id="sec-shortQuiet">Short quiet (5–15 seconds idle)</h2>
+<p class="cond">No click, drag or key for a short stretch. Tone is calm, not worried yet.</p>
+<dl>
+<dt id="p-ellipsis">...</dt><dd>idle 5–15s</dd>
+<dt id="p-still-here">still here</dt><dd>idle 5–15s</dd>
+<dt id="p-waiting">waiting</dt><dd>idle 5–15s</dd>
+<dt id="p-quiet-moment">quiet for a moment</dt><dd>idle 5–15s</dd>
+</dl>
+
+<h2 id="sec-longQuiet">Long quiet (15–40 seconds idle)</h2>
+<p class="cond">The system starts asking whether you're still around.</p>
+<dl>
+<dt id="p-still-there">are you still there?</dt><dd>idle 15–40s</dd>
+<dt id="p-hello">hello?</dt><dd>idle 15–40s</dd>
+<dt id="p-see-what-said">did you see what i said?</dt><dd>idle 15–40s</dd>
+<dt id="p-you-there">you there?</dt><dd>idle 15–40s</dd>
+</dl>
+
+<h2 id="sec-veryQuiet">Very quiet (40+ seconds idle)</h2>
+<p class="cond">The longest stretch of silence — more resigned than urgent.</p>
+<dl>
+<dt id="p-quiet-a-while">it's been quiet for a while</dt><dd>idle 40s+</dd>
+<dt id="p-did-you-leave">did you leave?</dt><dd>idle 40s+</dd>
+<dt id="p-wondering">i'm still here, in case you're wondering</dt><dd>idle 40s+</dd>
+<dt id="p-just-checking">just checking if you're around</dt><dd>idle 40s+</dd>
+<dt id="p-ok-wait">okay. i'll wait.</dt><dd>idle 40s+</dd>
+</dl>
+
+<p><a class="back" href="v1.html">&larr; back to Accompany</a></p>
+</body>
+</html>

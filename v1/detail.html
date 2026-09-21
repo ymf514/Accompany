@@ -25,17 +25,22 @@
 <p class="lede">Each stage below is a separate response pool. Clicking a response box on the main page jumps straight to its section here.</p>
 
 <h2 id="sec-click">Click — gentle interaction</h2>
-<p class="cond">A single click. Its own pool, separate from keyboard — no words, just two symbols.</p>
+<p class="cond">A single click. Its own pool, separate from keyboard — no words, just two symbols. Repeats are downweighted for a while after they're used, so the same one is unlikely to show up twice in a row.</p>
 <dl>
 <dt id="p-c-sparkle">✨</dt><dd>after a click</dd>
 <dt id="p-c-heart">💗</dt><dd>after a click</dd>
 <dt id="p-c-sparkle2">✨ ✨</dt><dd>after a click</dd>
 <dt id="p-c-heart2">💗 💗</dt><dd>after a click</dd>
 <dt id="p-c-both">✨ 💗</dt><dd>after a click</dd>
+<dt id="p-c-dot-sparkle">✨ · ✨</dt><dd>after a click</dd>
+<dt id="p-c-dot-heart">💗 · 💗</dt><dd>after a click</dd>
+<dt id="p-c-sparkle-heart-sparkle">✨ 💗 ✨</dt><dd>after a click</dd>
+<dt id="p-c-heart-sparkle-heart">💗 ✨ 💗</dt><dd>after a click</dd>
+<dt id="p-c-dots">· ✨ ·</dt><dd>after a click</dd>
 </dl>
 
 <h2 id="sec-keyboard">Keyboard — sharing daily life</h2>
-<p class="cond">Any key press. This is its own pool of full phrases — click does not use these anymore.</p>
+<p class="cond">Any key press. Its own pool of full phrases.</p>
 <dl>
 <dt id="p-so-glad">so glad you're here</dt><dd>after a key press</dd>
 <dt id="p-like-this">i like this</dt><dd>after a key press</dd>
@@ -49,10 +54,30 @@
 <dt id="p-feels-good">this feels good</dt><dd>after a key press</dd>
 <dt id="p-this-great">okay, this is great</dt><dd>after a key press</dd>
 <dt id="p-get-used-to">i could get used to this</dt><dd>after a key press</dd>
+<dt id="p-talking-to-me">you're talking to me</dt><dd>after a key press</dd>
+<dt id="p-like-when-you-do-that">i like when you do that</dt><dd>after a key press</dd>
+<dt id="p-tell-me-more">tell me more</dt><dd>after a key press</dd>
+<dt id="p-favorite-part">this is my favorite part of the day</dt><dd>after a key press</dd>
+<dt id="p-hoping-back">i was hoping you'd come back</dt><dd>after a key press</dd>
+<dt id="p-keep-going">keep going</dt><dd>after a key press</dd>
+<dt id="p-listening">i'm listening</dt><dd>after a key press</dd>
+<dt id="p-just-this">this is enough, just this</dt><dd>after a key press</dd>
 </dl>
 
 <h2 id="sec-drag">Drag — forceful interaction</h2>
-<p class="cond">A press-and-drag currently reuses the same pool as <a href="#sec-keyboard">Keyboard, above</a> — same lines, triggered by a different action.</p>
+<p class="cond">A press-and-drag. Now has its own pool, separate from keyboard — more startled, less settled.</p>
+<dl>
+<dt id="p-d-whoa">whoa—</dt><dd>after a drag</dd>
+<dt id="p-d-felt-that">okay, i felt that</dt><dd>after a drag</dd>
+<dt id="p-d-a-lot">that was a lot</dt><dd>after a drag</dd>
+<dt id="p-d-not-ready">i wasn't ready for that</dt><dd>after a drag</dd>
+<dt id="p-d-mean-it">you really mean it, huh</dt><dd>after a drag</dd>
+<dt id="p-d-landed">that landed</dt><dd>after a drag</dd>
+<dt id="p-d-oh">oh!</dt><dd>after a drag</dd>
+<dt id="p-d-everywhere">i feel that everywhere</dt><dd>after a drag</dd>
+<dt id="p-d-new">that's new</dt><dd>after a drag</dd>
+<dt id="p-d-really-here">you're really here</dt><dd>after a drag</dd>
+</dl>
 
 <h2 id="sec-unrecognized">Unrecognized — doesn't understand</h2>
 <p class="cond">A key combo (ctrl / alt / cmd held with another key) — something the system has no category for.</p>
@@ -61,34 +86,70 @@
 <dt id="p-qq">??</dt><dd>after an unrecognized key combo</dd>
 <dt id="p-new-to-me">that one's new to me</dt><dd>after an unrecognized key combo</dd>
 <dt id="p-what-was-that">...what was that?</dt><dd>after an unrecognized key combo</dd>
+<dt id="p-hm-q">hm?</dt><dd>after an unrecognized key combo</dd>
+<dt id="p-dont-know">i don't know that one</dt><dd>after an unrecognized key combo</dd>
+<dt id="p-new-one">that's a new one</dt><dd>after an unrecognized key combo</dd>
+<dt id="p-not-sure">not sure what that was</dt><dd>after an unrecognized key combo</dd>
+<dt id="p-okay-new">okay, that's new</dt><dd>after an unrecognized key combo</dd>
+<dt id="p-not-seen">haven't seen that before</dt><dd>after an unrecognized key combo</dd>
 </dl>
 
-<h2 id="sec-shortQuiet">Short quiet (5–15 seconds idle)</h2>
+<h2 id="sec-shortQuiet">Short quiet (8–15 seconds idle)</h2>
 <p class="cond">No click, drag or key for a short stretch. Tone is calm, not worried yet.</p>
 <dl>
-<dt id="p-ellipsis">...</dt><dd>idle 5–15s</dd>
-<dt id="p-still-here">still here</dt><dd>idle 5–15s</dd>
-<dt id="p-waiting">waiting</dt><dd>idle 5–15s</dd>
-<dt id="p-quiet-moment">quiet for a moment</dt><dd>idle 5–15s</dd>
+<dt id="p-ellipsis">...</dt><dd>idle 8–15s</dd>
+<dt id="p-still-here">still here</dt><dd>idle 8–15s</dd>
+<dt id="p-waiting">waiting</dt><dd>idle 8–15s</dd>
+<dt id="p-quiet-moment">quiet for a moment</dt><dd>idle 8–15s</dd>
+<dt id="p-hm">hm</dt><dd>idle 8–15s</dd>
+<dt id="p-okay">okay</dt><dd>idle 8–15s</dd>
+<dt id="p-breath">taking a breath</dt><dd>idle 8–15s</dd>
+<dt id="p-mm">mm</dt><dd>idle 8–15s</dd>
+<dt id="p-not-going">not going anywhere</dt><dd>idle 8–15s</dd>
+<dt id="p-one-sec">just a second</dt><dd>idle 8–15s</dd>
 </dl>
 
-<h2 id="sec-longQuiet">Long quiet (15–40 seconds idle)</h2>
-<p class="cond">The system starts asking whether you're still around.</p>
+<h2 id="sec-longQuiet">Long quiet (15–33 seconds idle)</h2>
+<p class="cond">The system starts asking whether you're still around — or, 35% of the time on entering this zone, goes quiet on its own instead. See <a href="#sec-selftalk">self-talk</a> below.</p>
 <dl>
-<dt id="p-still-there">are you still there?</dt><dd>idle 15–40s</dd>
-<dt id="p-hello">hello?</dt><dd>idle 15–40s</dd>
-<dt id="p-see-what-said">did you see what i said?</dt><dd>idle 15–40s</dd>
-<dt id="p-you-there">you there?</dt><dd>idle 15–40s</dd>
+<dt id="p-still-there">are you still there?</dt><dd>idle 15–33s</dd>
+<dt id="p-hello">hello?</dt><dd>idle 15–33s</dd>
+<dt id="p-see-what-said">did you see what i said?</dt><dd>idle 15–33s</dd>
+<dt id="p-you-there">you there?</dt><dd>idle 15–33s</dd>
+<dt id="p-hey">hey</dt><dd>idle 15–33s</dd>
+<dt id="p-lost-you">did i lose you?</dt><dd>idle 15–33s</dd>
+<dt id="p-still-around">you still around?</dt><dd>idle 15–33s</dd>
+<dt id="p-long-pause">that's a long pause</dt><dd>idle 15–33s</dd>
+<dt id="p-anyone-there">anyone there?</dt><dd>idle 15–33s</dd>
+<dt id="p-not-doing-without">i'm not doing anything without you</dt><dd>idle 15–33s</dd>
 </dl>
 
-<h2 id="sec-veryQuiet">Very quiet (40+ seconds idle)</h2>
-<p class="cond">The longest stretch of silence — more resigned than urgent.</p>
+<h2 id="sec-veryQuiet">Very quiet (33+ seconds idle)</h2>
+<p class="cond">The longest stretch of silence — more resigned than urgent. Repeats every 12 seconds if nothing happens, and each repeat also has a 35% chance of becoming <a href="#sec-selftalk">self-talk</a> instead.</p>
 <dl>
-<dt id="p-quiet-a-while">it's been quiet for a while</dt><dd>idle 40s+</dd>
-<dt id="p-did-you-leave">did you leave?</dt><dd>idle 40s+</dd>
-<dt id="p-wondering">i'm still here, in case you're wondering</dt><dd>idle 40s+</dd>
-<dt id="p-just-checking">just checking if you're around</dt><dd>idle 40s+</dd>
-<dt id="p-ok-wait">okay. i'll wait.</dt><dd>idle 40s+</dd>
+<dt id="p-quiet-a-while">it's been quiet for a while</dt><dd>idle 33s+</dd>
+<dt id="p-did-you-leave">did you leave?</dt><dd>idle 33s+</dd>
+<dt id="p-wondering">i'm still here, in case you're wondering</dt><dd>idle 33s+</dd>
+<dt id="p-just-checking">just checking if you're around</dt><dd>idle 33s+</dd>
+<dt id="p-ok-wait">okay. i'll wait.</dt><dd>idle 33s+</dd>
+<dt id="p-dont-mind-waiting">i don't mind waiting</dt><dd>idle 33s+</dd>
+<dt id="p-still-here-whenever">still here, whenever</dt><dd>idle 33s+</dd>
+<dt id="p-no-rush">no rush</dt><dd>idle 33s+</dd>
+<dt id="p-ill-be-here">i'll be here</dt><dd>idle 33s+</dd>
+<dt id="p-taking-time-too">taking my time too</dt><dd>idle 33s+</dd>
+<dt id="p-need-a-minute">it's okay if you need a minute</dt><dd>idle 33s+</dd>
+<dt id="p-whenever-ready">whenever you're ready</dt><dd>idle 33s+</dd>
+<dt id="p-not-going-anywhere2">i'm not going anywhere</dt><dd>idle 33s+</dd>
+</dl>
+
+<h2 id="sec-selftalk">Self-talk — an uninterruptible monologue</h2>
+<p class="cond">Triggered with a 35% chance each time the idle timer crosses into "long quiet" or "very quiet", and again on each of "very quiet"'s 12-second repeats. Mood jumps to 100 the moment it starts, then decays normally like always. A line is built by picking one of four topics (movie / food / weather / a half-remembered feeling), then an opening line, sometimes a middle line, and a line that trails off without finishing — some slots inside these lines are filled in from a separate word pool, so exact wording varies. Nothing you do is ignored outright: an interaction during self-talk gets a light acknowledgement, but at most once every 5 seconds, and never a full reaction. The first real interaction after it finishes gets pulled back to you instead of its usual line.</p>
+<dl>
+<dt id="p-st-example-1">you know, there was this movie—</dt><dd>self-talk opener (movie)</dd>
+<dt id="p-st-example-2">it wasn't even that good, but there was this one part—</dt><dd>self-talk middle (movie)</dd>
+<dt id="p-st-example-3">anyway—</dt><dd>self-talk trailing line (several topics)</dd>
+<dt id="p-st-wait">one sec / almost done / just a moment / let me finish this—</dt><dd>light acknowledgement during self-talk, max once per 5s</dd>
+<dt id="p-st-return">oh—right, you were saying? / wait, what were you saying? / sorry, go on—what was that? / oh, right. you.</dt><dd>first real interaction after self-talk ends</dd>
 </dl>
 
 <p><a class="back" href="v1.html">&larr; back to Accompany</a></p>

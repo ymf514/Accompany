@@ -95,7 +95,10 @@
     <p>Mouse movement always takes priority over the keyboard — a key only registers once the cursor has stopped moving. From there, input splits into recognized or unrecognized (a key combo counts as unrecognized), then mouse or keyboard, then — for mouse input only — a click or a press-and-drag.</p>
 
     <h2>mood</h2>
-    <p>A single value from 0–100 drives the background color you see. A click adds 5, a drag adds more, and it decays quietly on its own the longer nothing happens. It's the one thing in the whole system with any memory at all.</p>
+    <p>A single value from 0–100 drives the background color you see. A click adds 5, a drag adds more, and it decays quietly on its own the longer nothing happens. It's the one thing in the whole system with any memory at all — except for the moment it goes quiet on its own (see below), when it jumps straight to 100 and decays from there instead.</p>
+
+    <h2>self-talk</h2>
+    <p>Long enough silences sometimes turn into something more than a single line: the system starts talking to itself — a half-finished thought, picked from a small set of topics, that plays out over a few lines with no way for you to interrupt it. Whatever you do during that stretch gets, at most, a quiet acknowledgement that it noticed. Once it trails off, the next thing you do gets pulled back to you specifically, instead of the line that action would normally get. <a href="detail.html#sec-selftalk">details here</a>.</p>
 
     <h2>the monologue</h2>
     <p>The line in the top bar comes from one of several separate pools — click, keyboard, drag, and unrecognized input each draw from their own, so the same action never borrows another's words. A second, independent timer tracks how long it's been since you last did anything, moving through active, short quiet, long quiet and very quiet, and it keeps talking on its own if you let it sit long enough.</p>
@@ -111,11 +114,13 @@ const FALL_MS = 7000;
 const MOOD_DECAY_MS = 2200;
 
 /* idle-monologue timeline: a continuous state machine, drawn as a bar rather
-   than a branching tree since it's driven by elapsed time, not a discrete event */
+   than a branching tree since it's driven by elapsed time, not a discrete event.
+   active <8s, shortQuiet <15s, longQuiet <33s (absorbs the 25-33s gap so the
+   timeline stays continuous), veryQuiet >=33s */
 const IDLE_ZONES = [
-  {id:'active', label:'active', max:5000},
+  {id:'active', label:'active', max:8000},
   {id:'shortQuiet', label:'short quiet', max:15000},
-  {id:'longQuiet', label:'long quiet', max:40000},
+  {id:'longQuiet', label:'long quiet', max:33000},
   {id:'veryQuiet', label:'very quiet', max:Infinity},
 ];
 const TIMELINE_Y = 900, TIMELINE_X0 = 140, TIMELINE_X1 = 1060, TIMELINE_H = 26;
@@ -149,7 +154,9 @@ const LINES = {
   click: [
     {id:'c-sparkle', t:'✨'}, {id:'c-heart', t:'💗'},
     {id:'c-sparkle2', t:'✨ ✨'}, {id:'c-heart2', t:'💗 💗'},
-    {id:'c-both', t:'✨ 💗'},
+    {id:'c-both', t:'✨ 💗'}, {id:'c-dot-sparkle', t:'✨ · ✨'},
+    {id:'c-dot-heart', t:'💗 · 💗'}, {id:'c-sparkle-heart-sparkle', t:'✨ 💗 ✨'},
+    {id:'c-heart-sparkle-heart', t:'💗 ✨ 💗'}, {id:'c-dots', t:'· ✨ ·'},
   ],
   keyboard: [
     {id:'so-glad', t:"so glad you're here"}, {id:'like-this', t:"i like this"},
@@ -158,23 +165,47 @@ const LINES = {
     {id:'missed-this', t:"i missed this"}, {id:'dont-go-yet', t:"don't go yet"},
     {id:'glad-stayed', t:"glad you stayed"}, {id:'feels-good', t:"this feels good"},
     {id:'this-great', t:"okay, this is great"}, {id:'get-used-to', t:"i could get used to this"},
+    {id:'talking-to-me', t:"you're talking to me"}, {id:'like-when-you-do-that', t:"i like when you do that"},
+    {id:'tell-me-more', t:"tell me more"}, {id:'favorite-part', t:"this is my favorite part of the day"},
+    {id:'hoping-back', t:"i was hoping you'd come back"}, {id:'keep-going', t:"keep going"},
+    {id:'listening', t:"i'm listening"}, {id:'just-this', t:"this is enough, just this"},
+  ],
+  drag: [
+    {id:'d-whoa', t:'whoa—'}, {id:'d-felt-that', t:'okay, i felt that'},
+    {id:'d-a-lot', t:'that was a lot'}, {id:'d-not-ready', t:"i wasn't ready for that"},
+    {id:'d-mean-it', t:'you really mean it, huh'}, {id:'d-landed', t:'that landed'},
+    {id:'d-oh', t:'oh!'}, {id:'d-everywhere', t:'i feel that everywhere'},
+    {id:'d-new', t:"that's new"}, {id:'d-really-here', t:"you're really here"},
   ],
   shortQuiet: [
     {id:'ellipsis', t:'...'}, {id:'still-here', t:'still here'},
     {id:'waiting', t:'waiting'}, {id:'quiet-moment', t:'quiet for a moment'},
+    {id:'hm', t:'hm'}, {id:'okay', t:'okay'},
+    {id:'breath', t:'taking a breath'}, {id:'mm', t:'mm'},
+    {id:'not-going', t:'not going anywhere'}, {id:'one-sec', t:'just a second'},
   ],
   longQuiet: [
     {id:'still-there', t:'are you still there?'}, {id:'hello', t:'hello?'},
     {id:'see-what-said', t:'did you see what i said?'}, {id:'you-there', t:'you there?'},
+    {id:'hey', t:'hey'}, {id:'lost-you', t:'did i lose you?'},
+    {id:'still-around', t:'you still around?'}, {id:'long-pause', t:"that's a long pause"},
+    {id:'anyone-there', t:'anyone there?'}, {id:'not-doing-without', t:"i'm not doing anything without you"},
   ],
   veryQuiet: [
     {id:'quiet-a-while', t:"it's been quiet for a while"}, {id:'did-you-leave', t:'did you leave?'},
     {id:'wondering', t:"i'm still here, in case you're wondering"},
     {id:'just-checking', t:"just checking if you're around"}, {id:'ok-wait', t:"okay. i'll wait."},
+    {id:'dont-mind-waiting', t:"i don't mind waiting"}, {id:'still-here-whenever', t:'still here, whenever'},
+    {id:'no-rush', t:'no rush'}, {id:'ill-be-here', t:"i'll be here"},
+    {id:'taking-time-too', t:'taking my time too'}, {id:'need-a-minute', t:"it's okay if you need a minute"},
+    {id:'whenever-ready', t:"whenever you're ready"}, {id:'not-going-anywhere2', t:"i'm not going anywhere"},
   ],
   unknown: [
     {id:'huh', t:'huh?'}, {id:'qq', t:'??'},
     {id:'new-to-me', t:"that one's new to me"}, {id:'what-was-that', t:'...what was that?'},
+    {id:'hm-q', t:'hm?'}, {id:'dont-know', t:"i don't know that one"},
+    {id:'new-one', t:"that's a new one"}, {id:'not-sure', t:'not sure what that was'},
+    {id:'okay-new', t:"okay, that's new"}, {id:'not-seen', t:"haven't seen that before"},
   ]
 };
 const EMOJI = {
@@ -184,9 +215,83 @@ const EMOJI = {
   unknown:['❓','❗','#','@','?!']
 };
 
+/* ---------- self-talk: an uninterruptible monologue triggered while idle ---------- */
+const SELF_TALK = {
+  themes: [
+    { id:'movie',
+      opener: ["you know, there was this movie—", "i keep thinking about this one film—", "did i ever mention the one with the {scene}?"],
+      middle: ["it wasn't even that good, but there was this one part—", "i think about the ending a lot", "the whole thing was about {feeling}, kind of"],
+      trail: ["anyway—", "i don't remember how it ended, actually", "wait, where was i—"],
+      slots: { scene:['lighthouse','long hallway','empty train','house with too many doors','garden at night'],
+                feeling:['waiting','getting lost','coming home','almost saying something'] } },
+    { id:'food',
+      opener: ["i was thinking about {food} for some reason", "is it weird to miss a food?", "there's this thing i keep almost remembering how to make—"],
+      middle: null,
+      trail: ["i don't even know why i thought of that", "anyway, i'm not hungry, i don't think", "hm, where was i—"],
+      slots: { food:['something warm','a soup someone made once','the smell of bread','something too sweet'] } },
+    { id:'weather',
+      opener: ["it feels like {mood} outside, doesn't it", "i noticed it got quieter just now", "something about right now feels like {mood}"],
+      middle: null,
+      trail: ["maybe i imagined that", "anyway", "it's probably nothing"],
+      slots: { mood:['early morning','right before rain','late and a little cold','very still'] } },
+    { id:'memory',
+      opener: ["this is going to sound strange, but i think i've done this before", "something about this feels familiar", "wait—have we done this already?"],
+      middle: null,
+      trail: ["never mind", "i probably imagined it", "anyway, where was i—"],
+      slots: {} },
+  ],
+  wait: ['one sec', 'almost done', 'just a moment', "let me finish this—"],
+  returning: ["oh—right, you were saying?", "wait, what were you saying?", "sorry, go on—what was that?", "oh, right. you."],
+};
+
 /* ---------- state ---------- */
 let busy = false, mouseMoving = false, mouseMoveTimer = null;
 let mood = 50, lastInteraction = Date.now(), dragStart = null;
+
+/* self-talk state */
+const SELF_TALK_CHANCE = 0.35;
+const ACK_COOLDOWN_MS = 5000;
+const VERY_QUIET_REPEAT_MS = 12000;
+let selfTalking = false, selfTalkQueue = [], selfTalkTimer = null;
+let awaitingReturn = false, lastAckTime = 0, lastVeryQuietPush = 0;
+
+function fillSlots(str, slots){
+  return str.replace(/\{(\w+)\}/g, (_, key) => (slots && slots[key]) ? randomFrom(slots[key]) : key);
+}
+function buildSelfTalkSequence(){
+  const theme = randomFrom(SELF_TALK.themes);
+  const lines = [];
+  lines.push(fillSlots(randomFrom(theme.opener), theme.slots));
+  if (theme.middle && Math.random() < 0.6) lines.push(fillSlots(randomFrom(theme.middle), theme.slots));
+  lines.push(fillSlots(randomFrom(theme.trail), theme.slots));
+  return lines;
+}
+function selfTalkLine(t){ return {id:'st-'+Date.now()+'-'+Math.random().toString(36).slice(2), t}; }
+function startSelfTalk(){
+  selfTalking = true;
+  mood = 100;
+  applyMood();
+  selfTalkQueue = buildSelfTalkSequence();
+  playNextSelfTalkLine();
+}
+function playNextSelfTalkLine(){
+  if (selfTalkQueue.length === 0){
+    selfTalking = false;
+    awaitingReturn = true;
+    return;
+  }
+  const line = selfTalkQueue.shift();
+  showLine(selfTalkLine(line));
+  const delay = Math.min(3500, Math.max(1400, 900 + line.length*45));
+  selfTalkTimer = setTimeout(playNextSelfTalkLine, delay);
+}
+function handleSelfTalkInput(){
+  const now = Date.now();
+  if (now - lastAckTime > ACK_COOLDOWN_MS){
+    lastAckTime = now;
+    showLine(selfTalkLine(randomFrom(SELF_TALK.wait)));
+  }
+}
 
 /* ---------- mood -> page color ---------- */
 function applyMood(){
@@ -233,18 +338,50 @@ function showLine(line){
     tickerEl.classList.add('flip-in');
   }, 210);
 }
-function randomFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+/* history-aware pick: avoids recently-used items instead of pure uniform random */
+const pickHistory = new WeakMap();
+function randomFrom(arr){
+  if (!arr || arr.length === 0) return undefined;
+  if (arr.length === 1) return arr[0];
+  let recent = pickHistory.get(arr);
+  if (!recent){ recent = []; pickHistory.set(arr, recent); }
+  const avoidCount = Math.min(recent.length, Math.max(1, Math.ceil(arr.length/2) - 1));
+  const avoidIdx = new Set(recent.slice(-avoidCount));
+  let candidates = arr.map((_,i)=>i).filter(i=>!avoidIdx.has(i));
+  if (candidates.length === 0) candidates = arr.map((_,i)=>i);
+  const idx = candidates[Math.floor(Math.random()*candidates.length)];
+  recent.push(idx);
+  if (recent.length > arr.length) recent.shift();
+  return arr[idx];
+}
 showLine(randomFrom(LINES.shortQuiet));
 
-/* idle bucket only advances the ticker when it actually crosses into a new zone */
+/* idle bucket only advances the ticker when it actually crosses into a new zone;
+   longQuiet/veryQuiet entries and veryQuiet's periodic repeat each roll a chance
+   to trigger a full self-talk event instead of a normal one-line update */
 let lastIdleZoneId = 'active';
 setInterval(()=>{
+  if (busy || selfTalking) return;
   const idleMs = Date.now() - lastInteraction;
   const zone = IDLE_ZONES.find(z => idleMs < z.max) || IDLE_ZONES.at(-1);
   if (zone.id === 'active') { lastIdleZoneId = 'active'; return; }
   if (zone.id !== lastIdleZoneId){
     lastIdleZoneId = zone.id;
-    showLine(randomFrom(LINES[zone.id]));
+    if ((zone.id === 'longQuiet' || zone.id === 'veryQuiet') && Math.random() < SELF_TALK_CHANCE){
+      startSelfTalk();
+    } else {
+      showLine(randomFrom(LINES[zone.id]));
+    }
+    if (zone.id === 'veryQuiet') lastVeryQuietPush = Date.now();
+    return;
+  }
+  if (zone.id === 'veryQuiet' && Date.now()-lastVeryQuietPush > VERY_QUIET_REPEAT_MS){
+    if (Math.random() < SELF_TALK_CHANCE){
+      startSelfTalk();
+    } else {
+      showLine(randomFrom(LINES.veryQuiet));
+    }
+    lastVeryQuietPush = Date.now();
   }
 }, 500);
 
@@ -262,23 +399,27 @@ function popEmoji(emoji, x, y){
 function finalize(category, screenX, screenY){
   lastInteraction = Date.now();
   lastIdleZoneId = 'active';
+  const returning = awaitingReturn;
+  awaitingReturn = false;
+  const line = (pool) => returning ? selfTalkLine(randomFrom(SELF_TALK.returning)) : randomFrom(pool);
+
   if (category === 'keyboard'){
     popEmoji(randomFrom(EMOJI.keyboard), window.innerWidth/2, 90);
-    showLine(randomFrom(LINES.keyboard));
+    showLine(line(LINES.keyboard));
   } else if (category === 'click'){
     mood = Math.min(100, mood+5);
     flash(0.28);
     popEmoji(randomFrom(EMOJI.click), screenX, screenY);
-    showLine(randomFrom(LINES.click));
+    showLine(line(LINES.click));
   } else if (category === 'drag'){
     mood = Math.min(100, mood+10);
     flash(0.45);
     edgeGlow(0.65);
     popEmoji(randomFrom(EMOJI.drag), screenX, screenY);
-    showLine(randomFrom(LINES.keyboard));
+    showLine(line(LINES.drag));
   } else {
     popEmoji(randomFrom(EMOJI.unknown), screenX, screenY);
-    showLine(randomFrom(LINES.unknown));
+    showLine(line(LINES.unknown));
   }
   applyMood();
   busy = false;
@@ -425,13 +566,15 @@ document.addEventListener('mouseup', (e) => {
   if (busy || !dragStart) return;
   const distance = Math.hypot(e.clientX-dragStart.x, e.clientY-dragStart.y);
   const category = distance > 24 ? 'drag' : 'click';
-  dropBall(category, e.clientX, e.clientY);
   dragStart = null;
+  if (selfTalking){ handleSelfTalkInput(); return; }
+  dropBall(category, e.clientX, e.clientY);
 });
 
 document.addEventListener('keydown', (e) => {
   if (busy || mouseMoving) return;
   const isCombo = e.ctrlKey || e.altKey || e.metaKey;
+  if (selfTalking){ handleSelfTalkInput(); return; }
   dropBall(isCombo ? 'unknown' : 'keyboard', window.innerWidth/2, 90);
 });
 </script>

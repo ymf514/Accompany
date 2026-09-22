@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accompany</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#f8f3e6;overflow:hidden;cursor:none;
+    font-family:'IBM Plex Mono',monospace;transition:background-color 1.2s ease}
+
+  /* faint paper grain over the whole page — decorative only, never blocks input */
+  body::before{
+    content:'';
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    opacity:.045; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:180px 180px;
+  }
+
+  /* custom cursor: a white ring with a thin black outline, eased toward the
+     real pointer and sitting over its own soft blurred shadow; both breathe
+     with mood, standing in for the OS cursor everywhere on the page */
+  #cursor-dot{
+    position:fixed; top:0; left:0; width:14px; height:14px;
+    pointer-events:none; z-index:100; opacity:0;
+    transition:width .4s cubic-bezier(.16,1,.3,1), height .4s cubic-bezier(.16,1,.3,1),
+      opacity .4s cubic-bezier(.16,1,.3,1);
+  }
+  #cursor-dot .shadow{
+    position:absolute; inset:-3px; border-radius:50%;
+    background:radial-gradient(circle, rgba(92,79,54,.5), rgba(92,79,54,0) 70%);
+    filter:blur(2px);
+  }
+  #cursor-dot .ring{
+    position:absolute; inset:0; border-radius:50%;
+    background:#fff; border:1px solid #000; box-sizing:border-box;
+  }
+
+  #title{position:fixed;top:50%;right:12%;transform:translateY(-50%);
+    pointer-events:none;color:#5c4f36;font-size:clamp(11px,1.2vw,12px);font-weight:400;
+    letter-spacing:.4px;white-space:nowrap}
+
+  #log{position:fixed;top:28px;left:28px;right:28px;bottom:28px;
+    display:flex;flex-direction:column;justify-content:flex-start;gap:6px;
+    pointer-events:none;overflow:hidden}
+  #log div{color:#8a7a56;font-size:13px;opacity:0;transform:translateY(-6px);
+    animation:log-in .28s ease forwards}
+  @keyframes log-in{to{opacity:1;transform:translateY(0)}}
+
+  #flash{position:fixed;inset:0;background:#ecd98a;opacity:0;pointer-events:none;z-index:5}
+  #edge-glow{position:fixed;inset:0;pointer-events:none;z-index:6;
+    box-shadow:inset 0 0 0 0 rgba(216,185,85,0)}
+
+  .float-pop{position:fixed;font-size:28px;pointer-events:none;z-index:50;
+    animation:float-up 3.4s ease-out forwards}
+  @keyframes float-up{
+    0%{opacity:0;transform:translate(0,0) scale(.6)}
+    12%{opacity:1;transform:translate(0,-10px) scale(1)}
+    100%{opacity:0;transform:translate(var(--dx,20px),-160px) scale(1)}
+  }
+</style>
+</head>
+<body>
+<div id="log"></div>
+<div id="title">(stay with me for a bit)</div>
+<div id="flash"></div>
+<div id="edge-glow"></div>
+<div id="cursor-dot"><div class="shadow"></div><div class="ring"></div></div>
+
+<script>
+const MOOD_DECAY_MS = 2200;
+const MAX_LOG_LINES = 14;
+
+/* ---------- same monologue pools as the legible version ---------- */
+const LINES = {
+  click: [
+    {id:'c-sparkle', t:'✨'}, {id:'c-heart', t:'💗'},
+    {id:'c-sparkle2', t:'✨ ✨'}, {id:'c-heart2', t:'💗 💗'},
+    {id:'c-both', t:'✨ 💗'}, {id:'c-dot-sparkle', t:'✨ · ✨'},
+    {id:'c-dot-heart', t:'💗 · 💗'}, {id:'c-sparkle-heart-sparkle', t:'✨ 💗 ✨'},
+    {id:'c-heart-sparkle-heart', t:'💗 ✨ 💗'}, {id:'c-dots', t:'· ✨ ·'},
+  ],
+  keyboard: [
+    {id:'so-glad', t:"so glad you're here"}, {id:'like-this', t:"i like this"},
+    {id:'stay-longer', t:"stay a little longer"}, {id:'this-nice', t:"this is nice"},
+    {id:'came-back', t:"you came back"}, {id:'really-nice', t:"this is really nice!"},
+    {id:'missed-this', t:"i missed this"}, {id:'dont-go-yet', t:"don't go yet"},
+    {id:'glad-stayed', t:"glad you stayed"}, {id:'feels-good', t:"this feels good"},
+    {id:'this-great', t:"okay, this is great"}, {id:'get-used-to', t:"i could get used to this"},
+    {id:'talking-to-me', t:"you're talking to me"}, {id:'like-when-you-do-that', t:"i like when you do that"},
+    {id:'tell-me-more', t:"tell me more"}, {id:'favorite-part', t:"this is my favorite part of the day"},
+    {id:'hoping-back', t:"i was hoping you'd come back"}, {id:'keep-going', t:"keep going"},
+    {id:'listening', t:"i'm listening"}, {id:'just-this', t:"this is enough, just this"},
+  ],
+  drag: [
+    {id:'d-whoa', t:'whoa—'}, {id:'d-felt-that', t:'okay, i felt that'},
+    {id:'d-a-lot', t:'that was a lot'}, {id:'d-not-ready', t:"i wasn't ready for that"},
+    {id:'d-mean-it', t:'you really mean it, huh'}, {id:'d-landed', t:'that landed'},
+    {id:'d-oh', t:'oh!'}, {id:'d-everywhere', t:'i feel that everywhere'},
+    {id:'d-new', t:"that's new"}, {id:'d-really-here', t:"you're really here"},
+  ],
+  shortQuiet: [
+    {id:'ellipsis', t:'...'}, {id:'still-here', t:'still here'},
+    {id:'waiting', t:'waiting'}, {id:'quiet-moment', t:'quiet for a moment'},
+    {id:'hm', t:'hm'}, {id:'okay', t:'okay'},
+    {id:'breath', t:'taking a breath'}, {id:'mm', t:'mm'},
+    {id:'not-going', t:'not going anywhere'}, {id:'one-sec', t:'just a second'},
+  ],
+  longQuiet: [
+    {id:'still-there', t:'are you still there?'}, {id:'hello', t:'hello?'},
+    {id:'see-what-said', t:'did you see what i said?'}, {id:'you-there', t:'you there?'},
+    {id:'hey', t:'hey'}, {id:'lost-you', t:'did i lose you?'},
+    {id:'still-around', t:'you still around?'}, {id:'long-pause', t:"that's a long pause"},
+    {id:'anyone-there', t:'anyone there?'}, {id:'not-doing-without', t:"i'm not doing anything without you"},
+  ],
+  veryQuiet: [
+    {id:'quiet-a-while', t:"it's been quiet for a while"}, {id:'did-you-leave', t:'did you leave?'},
+    {id:'wondering', t:"i'm still here, in case you're wondering"},
+    {id:'just-checking', t:"just checking if you're around"}, {id:'ok-wait', t:"okay. i'll wait."},
+    {id:'dont-mind-waiting', t:"i don't mind waiting"}, {id:'still-here-whenever', t:'still here, whenever'},
+    {id:'no-rush', t:'no rush'}, {id:'ill-be-here', t:"i'll be here"},
+    {id:'taking-time-too', t:'taking my time too'}, {id:'need-a-minute', t:"it's okay if you need a minute"},
+    {id:'whenever-ready', t:"whenever you're ready"}, {id:'not-going-anywhere2', t:"i'm not going anywhere"},
+  ],
+  unknown: [
+    {id:'huh', t:'huh?'}, {id:'qq', t:'??'},
+    {id:'new-to-me', t:"that one's new to me"}, {id:'what-was-that', t:'...what was that?'},
+    {id:'hm-q', t:'hm?'}, {id:'dont-know', t:"i don't know that one"},
+    {id:'new-one', t:"that's a new one"}, {id:'not-sure', t:'not sure what that was'},
+    {id:'okay-new', t:"okay, that's new"}, {id:'not-seen', t:"haven't seen that before"},
+  ]
+};
+const EMOJI = {
+  keyboard:['🕊️','🍕','🌤️','☕','📚','🎶','🌻','🧺'],
+  click:['🥺','😊','😌','😳','😄','☺️'],
+  drag:['😍','🥰','😙','🤩','🥳'],
+  unknown:['❓','❗','#','@','?!']
+};
+
+/* ---------- self-talk: an uninterruptible monologue triggered while idle ---------- */
+const SELF_TALK = {
+  themes: [
+    { id:'movie',
+      opener: ["you know, there was this movie—", "i keep thinking about this one film—", "did i ever mention the one with the {scene}?"],
+      middle: ["it wasn't even that good, but there was this one part—", "i think about the ending a lot", "the whole thing was about {feeling}, kind of"],
+      trail: ["anyway—", "i don't remember how it ended, actually", "wait, where was i—"],
+      slots: { scene:['lighthouse','long hallway','empty train','house with too many doors','garden at night'],
+                feeling:['waiting','getting lost','coming home','almost saying something'] } },
+    { id:'food',
+      opener: ["i was thinking about {food} for some reason", "is it weird to miss a food?", "there's this thing i keep almost remembering how to make—"],
+      middle: null,
+      trail: ["i don't even know why i thought of that", "anyway, i'm not hungry, i don't think", "hm, where was i—"],
+      slots: { food:['something warm','a soup someone made once','the smell of bread','something too sweet'] } },
+    { id:'weather',
+      opener: ["it feels like {mood} outside, doesn't it", "i noticed it got quieter just now", "something about right now feels like {mood}"],
+      middle: null,
+      trail: ["maybe i imagined that", "anyway", "it's probably nothing"],
+      slots: { mood:['early morning','right before rain','late and a little cold','very still'] } },
+    { id:'memory',
+      opener: ["this is going to sound strange, but i think i've done this before", "something about this feels familiar", "wait—have we done this already?"],
+      middle: null,
+      trail: ["never mind", "i probably imagined it", "anyway, where was i—"],
+      slots: {} },
+  ],
+  wait: ['one sec', 'almost done', 'just a moment', "let me finish this—"],
+  returning: ["oh—right, you were saying?", "wait, what were you saying?", "sorry, go on—what was that?", "oh, right. you."],
+};
+
+/* ---------- burst intensity: the same action repeated in quick succession ----------
+   tier0 (1-2 in a row): normal. tier1 (3-5): a bit more — extra pop, same lines.
+   tier2 (6-14): overloaded — alternates between freezing (no reaction at all) and a
+   breathless line, instead of the category's normal line. tier3 (15+): goes
+   completely silent and stops reacting until you pause or switch to something
+   else, at which point it gets one line acknowledging the whole burst. Counted
+   separately per category — mixing click and keyboard bursts doesn't add up. */
+const BURST_BREATHLESS = ['okay, okay—', "that's— a lot", 'give me a second', 'whoa, slow down'];
+const BURST_REFLECTION = ["wow, that's a lot", "i'm glad you have so much to say", 'okay. that was... something', "you really went for it, huh"];
+
+/* ---------- state ---------- */
+let mouseMoving = false, mouseMoveTimer = null;
+let mood = 50, lastInteraction = Date.now(), dragStart = null;
+let lastIdleZoneId = 'active';
+
+/* self-talk state */
+const SELF_TALK_CHANCE = 0.35;
+const ACK_COOLDOWN_MS = 5000;
+let selfTalking = false, selfTalkQueue = [], selfTalkTimer = null;
+let awaitingReturn = false, lastAckTime = 0;
+
+/* burst-intensity state */
+const BURST_RESET_MS = 2000;
+const BURST_TIER1_MIN = 3, BURST_TIER2_MIN = 6, BURST_TIER3_MIN = 15;
+let burstCategory = null, burstCount = 0, burstLastTime = 0, burstTier3Pending = false;
+
+function burstTier(count){
+  if (count >= BURST_TIER3_MIN) return 3;
+  if (count >= BURST_TIER2_MIN) return 2;
+  if (count >= BURST_TIER1_MIN) return 1;
+  return 0;
+}
+/* advances the per-category streak; switching to a different category resets
+   the old one immediately (no need to wait out the 2s), and if that old streak
+   had gone silent (tier3), this new action inherits a one-time "reflect" flag
+   so its line gets swapped for a burst-acknowledging line instead of stacking
+   a second line on top of it */
+function updateBurst(category){
+  const now = Date.now();
+  let reflect = false;
+  if (burstCategory && burstCategory !== category){
+    const wasPending = burstTier3Pending;
+    burstCategory = null; burstCount = 0; burstTier3Pending = false;
+    if (wasPending) reflect = true;
+  }
+  if (burstCategory === category && now - burstLastTime <= BURST_RESET_MS){
+    burstCount++;
+  } else {
+    burstCategory = category; burstCount = 1;
+  }
+  burstLastTime = now;
+  const tier = burstTier(burstCount);
+  if (tier === 3) burstTier3Pending = true;
+  return { tier, reflect };
+}
+
+/* history-aware pick: avoids recently-used items instead of pure uniform random */
+const pickHistory = new WeakMap();
+function randomFrom(arr){
+  if (!arr || arr.length === 0) return undefined;
+  if (arr.length === 1) return arr[0];
+  let recent = pickHistory.get(arr);
+  if (!recent){ recent = []; pickHistory.set(arr, recent); }
+  const avoidCount = Math.min(recent.length, Math.max(1, Math.ceil(arr.length/2) - 1));
+  const avoidIdx = new Set(recent.slice(-avoidCount));
+  let candidates = arr.map((_,i)=>i).filter(i=>!avoidIdx.has(i));
+  if (candidates.length === 0) candidates = arr.map((_,i)=>i);
+  const idx = candidates[Math.floor(Math.random()*candidates.length)];
+  recent.push(idx);
+  if (recent.length > arr.length) recent.shift();
+  return arr[idx];
+}
+
+function fillSlots(str, slots){
+  return str.replace(/\{(\w+)\}/g, (_, key) => (slots && slots[key]) ? randomFrom(slots[key]) : key);
+}
+
+function buildSelfTalkSequence(){
+  const theme = randomFrom(SELF_TALK.themes);
+  const lines = [];
+  lines.push(fillSlots(randomFrom(theme.opener), theme.slots));
+  if (theme.middle && Math.random() < 0.6) lines.push(fillSlots(randomFrom(theme.middle), theme.slots));
+  lines.push(fillSlots(randomFrom(theme.trail), theme.slots));
+  return lines;
+}
+
+function startSelfTalk(){
+  selfTalking = true;
+  mood = 100;
+  applyMood();
+  selfTalkQueue = buildSelfTalkSequence();
+  playNextSelfTalkLine();
+}
+function playNextSelfTalkLine(){
+  if (selfTalkQueue.length === 0){
+    selfTalking = false;
+    awaitingReturn = true;
+    return;
+  }
+  const line = selfTalkQueue.shift();
+  appendLog({t: line});
+  const delay = Math.min(3500, Math.max(1400, 900 + line.length*45));
+  selfTalkTimer = setTimeout(playNextSelfTalkLine, delay);
+}
+function handleSelfTalkInput(){
+  const now = Date.now();
+  if (now - lastAckTime > ACK_COOLDOWN_MS){
+    lastAckTime = now;
+    appendLog({t: randomFrom(SELF_TALK.wait)});
+  }
+}
+
+/* ---------- custom cursor: eases toward the pointer, breathes with mood ---------- */
+const cursorEl = document.getElementById('cursor-dot');
+let cursorTargetX = window.innerWidth/2, cursorTargetY = window.innerHeight/2;
+let cursorX = cursorTargetX, cursorY = cursorTargetY;
+function updateCursorMoodLook(t){
+  cursorEl.style.width = (12 + t*10) + 'px';
+  cursorEl.style.height = (12 + t*10) + 'px';
+  cursorEl.style.opacity = 0.32 + t*0.35;
+}
+function animateCursor(){
+  cursorX += (cursorTargetX - cursorX) * 0.18;
+  cursorY += (cursorTargetY - cursorY) * 0.18;
+  cursorEl.style.transform = `translate(${cursorX}px, ${cursorY}px) translate(-50%,-50%)`;
+  requestAnimationFrame(animateCursor);
+}
+requestAnimationFrame(animateCursor);
+document.addEventListener('mouseleave', () => { cursorEl.style.opacity = 0; });
+
+/* ---------- mood -> page color ---------- */
+function applyMood(){
+  const t = mood/100;
+  const light=[252,248,238], deep=[228,210,148];
+  const c = light.map((v,i)=>Math.round(v+(deep[i]-v)*t));
+  document.body.style.backgroundColor = `rgb(${c[0]},${c[1]},${c[2]})`;
+  updateCursorMoodLook(t);
+}
+applyMood();
+setInterval(()=>{ mood = Math.max(0, mood-1); applyMood(); }, MOOD_DECAY_MS);
+
+function flash(intensity){
+  const el = document.getElementById('flash');
+  el.style.transition = 'none';
+  el.style.opacity = intensity;
+  requestAnimationFrame(()=>{
+    el.style.transition = 'opacity .9s ease-out';
+    el.style.opacity = 0;
+  });
+}
+function edgeGlow(intensity){
+  const el = document.getElementById('edge-glow');
+  el.style.transition = 'none';
+  el.style.boxShadow = `inset 0 0 140px 50px rgba(216,185,85,${intensity})`;
+  requestAnimationFrame(()=>{
+    el.style.transition = 'box-shadow 1.1s ease-out';
+    el.style.boxShadow = 'inset 0 0 140px 50px rgba(216,185,85,0)';
+  });
+}
+
+/* ---------- background monologue log: grows top-to-bottom, left-aligned ---------- */
+const logEl = document.getElementById('log');
+function appendLog(line){
+  const div = document.createElement('div');
+  div.textContent = line.t;
+  logEl.appendChild(div);
+  while (logEl.children.length > MAX_LOG_LINES) logEl.removeChild(logEl.firstChild);
+}
+appendLog({t:'are you there?'});
+
+const VERY_QUIET_REPEAT_MS = 12000;
+let lastVeryQuietPush = 0;
+
+/* idle timeline: active <8s, shortQuiet <15s, longQuiet <33s (absorbs the
+   25-33s gap so the timeline stays continuous), veryQuiet >=33s */
+const IDLE_ZONES = [
+  {id:'active', max:8000}, {id:'shortQuiet', max:15000},
+  {id:'longQuiet', max:33000}, {id:'veryQuiet', max:Infinity},
+];
+
+setInterval(()=>{
+  if (!selfTalking && burstTier3Pending && Date.now()-burstLastTime > BURST_RESET_MS){
+    burstTier3Pending = false; burstCategory = null; burstCount = 0;
+    appendLog({t: randomFrom(BURST_REFLECTION)});
+  }
+  if (selfTalking) return;
+  const idleMs = Date.now() - lastInteraction;
+  const zone = IDLE_ZONES.find(z => idleMs < z.max) || IDLE_ZONES.at(-1);
+  if (zone.id === 'active') { lastIdleZoneId = 'active'; return; }
+  if (zone.id !== lastIdleZoneId){
+    lastIdleZoneId = zone.id;
+    if ((zone.id === 'longQuiet' || zone.id === 'veryQuiet') && Math.random() < SELF_TALK_CHANCE){
+      startSelfTalk();
+    } else {
+      appendLog(randomFrom(LINES[zone.id]));
+    }
+    if (zone.id === 'veryQuiet') lastVeryQuietPush = Date.now();
+    return;
+  }
+  if (zone.id === 'veryQuiet' && Date.now()-lastVeryQuietPush > VERY_QUIET_REPEAT_MS){
+    if (Math.random() < SELF_TALK_CHANCE){
+      startSelfTalk();
+    } else {
+      appendLog(randomFrom(LINES.veryQuiet));
+    }
+    lastVeryQuietPush = Date.now();
+  }
+}, 500);
+
+/* ---------- floating emoji pop ---------- */
+function popEmoji(emoji, x, y){
+  const el = document.createElement('div');
+  el.className = 'float-pop'; el.textContent = emoji;
+  el.style.left = x+'px'; el.style.top = y+'px';
+  el.style.setProperty('--dx', (Math.random()*80-40)+'px');
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 3600);
+}
+/* tier1 gets an extra, slightly offset pop instead of new content */
+function popEmojiBurst(emoji, x, y, tier){
+  popEmoji(emoji, x, y);
+  if (tier >= 1) popEmoji(emoji, x + (Math.random()*30-15), y + (Math.random()*30-15));
+}
+
+/* ---------- respond to a classified input ---------- */
+function respond(category, screenX, screenY){
+  if (selfTalking){ handleSelfTalkInput(); return; }
+
+  lastInteraction = Date.now();
+  lastIdleZoneId = 'active';
+
+  const returning = awaitingReturn;
+  awaitingReturn = false;
+
+  const burst = updateBurst(category);
+  const tier = burst.tier;
+
+  /* tier3: stays silent while the streak holds — unless this action is the
+     one that carries a deferred reflection line from a just-abandoned streak */
+  if (tier === 3 && !burst.reflect) return;
+
+  /* returns the line to show, or null for tier2's "freeze" half — meaning
+     skip the reaction entirely, same as tier3's silence but just for one beat */
+  const line = (pool) => {
+    if (burst.reflect) return {t: randomFrom(BURST_REFLECTION)};
+    if (returning) return {t: randomFrom(SELF_TALK.returning)};
+    if (tier === 2) return Math.random() < 0.5 ? null : {t: randomFrom(BURST_BREATHLESS)};
+    return randomFrom(pool);
+  };
+
+  if (category === 'keyboard'){
+    const l = line(LINES.keyboard);
+    if (l === null) return;
+    popEmojiBurst(randomFrom(EMOJI.keyboard), window.innerWidth/2, window.innerHeight/2, tier);
+    appendLog(l);
+  } else if (category === 'click'){
+    const l = line(LINES.click);
+    if (l === null) return;
+    mood = Math.min(100, mood+5);
+    flash(0.28);
+    popEmojiBurst(randomFrom(EMOJI.click), screenX, screenY, tier);
+    appendLog(l);
+  } else if (category === 'drag'){
+    const l = line(LINES.drag);
+    if (l === null) return;
+    mood = Math.min(100, mood+10);
+    flash(0.45);
+    edgeGlow(0.65);
+    popEmojiBurst(randomFrom(EMOJI.drag), screenX, screenY, tier);
+    appendLog(l);
+  } else {
+    const l = line(LINES.unknown);
+    if (l === null) return;
+    popEmojiBurst(randomFrom(EMOJI.unknown), screenX, screenY, tier);
+    appendLog(l);
+  }
+  applyMood();
+}
+
+/* ================= input capture & classification ================= */
+document.addEventListener('mousemove', (e) => {
+  mouseMoving = true;
+  clearTimeout(mouseMoveTimer);
+  mouseMoveTimer = setTimeout(()=>{ mouseMoving = false; }, 220);
+  cursorTargetX = e.clientX; cursorTargetY = e.clientY;
+  updateCursorMoodLook(mood/100);
+});
+
+document.addEventListener('mousedown', (e) => {
+  dragStart = { x:e.clientX, y:e.clientY };
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (!dragStart) return;
+  const distance = Math.hypot(e.clientX-dragStart.x, e.clientY-dragStart.y);
+  const category = distance > 24 ? 'drag' : 'click';
+  respond(category, e.clientX, e.clientY);
+  dragStart = null;
+});
+
+document.addEventListener('keydown', (e) => {
+  if (mouseMoving) return;
+  const isCombo = e.ctrlKey || e.altKey || e.metaKey;
+  respond(isCombo ? 'unknown' : 'keyboard', window.innerWidth/2, window.innerHeight/2);
+});
+</script>
+</body>
+</html>
